@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── NextAuth required models ──────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+  habits   Habit[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── App models ────────────────────────────────────────────────────────────────
+
+model Habit {
+  id            String         @id @default(cuid())
+  userId        String
+  name          String
+  icon          String
+  color         String
+  type          HabitType
+  frequency     HabitFrequency
+  days          Int[]
+  counterTarget Int?
+  reminder      String?
+  createdAt     DateTime       @default(now())
+  archivedAt    DateTime?
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkpoints Checkpoint[]
+  records     HabitRecord[]
+}
+
+model Checkpoint {
+  id      String @id @default(cuid())
+  habitId String
+  time    String
+  label   String
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+}
+
+model HabitRecord {
+  id             String   @id @default(cuid())
+  habitId        String
+  date           String
+  completed      Boolean  @default(false)
+  completionRate Float    @default(0)
+  counterValue   Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  habit             Habit              @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  checkpointRecords CheckpointRecord[]
+
+  @@unique([habitId, date])
+}
+
+model CheckpointRecord {
+  id            String      @id @default(cuid())
+  habitRecordId String
+  checkpointId  String
+  status        CheckStatus @default(pending)
+  failContexts  String[]
+
+  habitRecord HabitRecord @relation(fields: [habitRecordId], references: [id], onDelete: Cascade)
+}
+
+enum HabitType {
+  single
+  checkpoints
+  counter
+}
+
+enum HabitFrequency {
+  daily
+  weekly
+  custom
+}
+
+enum CheckStatus {
+  pending
+  done
+  failed
+}
