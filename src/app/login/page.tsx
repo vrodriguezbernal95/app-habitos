@@ -3,38 +3,71 @@
 import { signIn } from "next-auth/react";
 import { Sparkles } from "lucide-react";
 
+const GoogleLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+    <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+  </svg>
+);
+
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6">
-      <div className="w-full max-w-sm space-y-8 text-center">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
+      {/* Card */}
+      <div className="w-full max-w-sm space-y-8">
+
+        {/* Logo + título */}
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
             <Sparkles size={28} className="text-primary-foreground" />
           </div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">Hábitos</h1>
-          <p className="text-muted-foreground text-sm">
-            Tu mejor versión, un día a la vez
+          <div>
+            <h1 className="font-heading text-3xl font-bold text-foreground">Hábitos</h1>
+            <p className="text-muted-foreground text-sm mt-1">Tu mejor versión, un día a la vez</p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-5 shadow-sm">
+          <div className="text-center space-y-1">
+            <p className="font-heading text-lg font-semibold">Bienvenido</p>
+            <p className="text-sm text-muted-foreground">
+              Inicia sesión o regístrate para empezar
+            </p>
+          </div>
+
+          {/* Google button — siempre fondo blanco para máxima visibilidad */}
+          <button
+            onClick={() => signIn("google", { callbackUrl: "/daily" })}
+            className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 border border-gray-200 shadow-sm transition-all duration-150 cursor-pointer tap-scale group"
+          >
+            <GoogleLogo />
+            <span className="font-semibold text-[#3c4043] text-sm">
+              Continuar con Google
+            </span>
+          </button>
+
+          <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+            Al continuar aceptas que guardemos tus hábitos de forma segura.<br />
+            Sin contraseñas, solo tu cuenta de Google.
           </p>
         </div>
 
-        {/* Login button */}
-        <button
-          onClick={() => signIn("google", { callbackUrl: "/daily" })}
-          className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-border bg-card hover:bg-muted transition-colors duration-150 cursor-pointer"
-        >
-          <svg width="20" height="20" viewBox="0 0 48 48">
-            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
-            <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
-            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
-            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
-          </svg>
-          <span className="font-medium text-foreground">Continuar con Google</span>
-        </button>
-
-        <p className="text-xs text-muted-foreground">
-          Al continuar aceptas que guardemos tus hábitos de forma segura.
-        </p>
+        {/* Feature hints */}
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { emoji: "🔥", label: "Rachas diarias" },
+            { emoji: "📊", label: "Tu progreso" },
+            { emoji: "🏆", label: "Logros" },
+          ].map(({ emoji, label }) => (
+            <div key={label} className="space-y-1">
+              <p className="text-2xl">{emoji}</p>
+              <p className="text-[11px] text-muted-foreground font-medium">{label}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
