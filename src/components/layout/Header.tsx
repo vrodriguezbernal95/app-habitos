@@ -3,14 +3,30 @@
 import { useState, useRef, useEffect } from "react";
 import { Menu, Sun, Moon, LogOut, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { cn } from "@/lib/utils";
+
+const PAGE_TITLES: Record<string, { title: string; sub?: string }> = {
+  "/daily":    { title: "Hoy",      sub: undefined },
+  "/habitos":  { title: "Hábitos",  sub: undefined },
+  "/liga":     { title: "Liga",     sub: "Compite con tus amigos" },
+  "/progreso": { title: "Progreso", sub: "Últimas 12 semanas" },
+  "/crear":    { title: "Nuevo hábito" },
+};
+
+function usePageTitle() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/editar")) return { title: "Editar hábito" };
+  return PAGE_TITLES[pathname] ?? { title: "" };
+}
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const { theme, toggle } = useTheme();
   const { data: session } = useSession();
   const menuRef = useRef<HTMLDivElement>(null);
+  const { title, sub } = usePageTitle();
 
   useEffect(() => {
     if (!open) return;
@@ -24,7 +40,14 @@ export function Header() {
   }, [open]);
 
   return (
-    <div className="sticky top-0 z-40 flex items-center justify-end px-4 md:px-8 py-3 bg-background/80 backdrop-blur-sm border-b border-border">
+    <div className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-8 py-3 bg-background/90 backdrop-blur-sm border-b border-border">
+      {/* Title */}
+      <div>
+        <h1 className="font-heading text-lg font-semibold leading-tight">{title}</h1>
+        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      </div>
+
+      {/* Burger */}
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setOpen((v) => !v)}
@@ -39,7 +62,6 @@ export function Header() {
 
         {open && (
           <div className="absolute right-0 top-11 z-50 w-52 rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
-            {/* User info */}
             {session?.user && (
               <div className="px-4 py-3 border-b border-border">
                 {session.user.image && (
@@ -54,7 +76,6 @@ export function Header() {
               </div>
             )}
 
-            {/* Theme toggle */}
             <button
               onClick={() => { toggle(); setOpen(false); }}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors duration-150 cursor-pointer"
@@ -67,10 +88,8 @@ export function Header() {
               <span>{theme === "dark" ? "Modo claro" : "Modo oscuro"}</span>
             </button>
 
-            {/* Divider */}
             <div className="border-t border-border" />
 
-            {/* Sign out */}
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors duration-150 cursor-pointer"

@@ -135,10 +135,10 @@ export default function DailyPage() {
 
   return (
     <div className="px-4 md:px-8 pt-6 pb-4 space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
+      {/* Greeting + date */}
+      <div className="space-y-0.5">
         <p className="text-sm text-muted-foreground font-medium capitalize">{formatDate()}</p>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">{getDayGreeting()} ✦</h1>
+        <p className="text-base font-semibold text-foreground">{getDayGreeting()} ✦</p>
         <p className="text-sm text-muted-foreground italic">{motivationMsg}</p>
       </div>
 

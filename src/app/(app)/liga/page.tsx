@@ -5,12 +5,6 @@ import { Trophy, Users, Clock, Zap } from "lucide-react";
 export default function LigaPage() {
   return (
     <div className="px-4 md:px-8 pt-6 pb-4 space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">Liga</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Compite con tus amigos</p>
-      </div>
-
       {/* Coming soon hero */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 text-center space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">

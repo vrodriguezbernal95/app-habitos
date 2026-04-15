@@ -117,12 +117,6 @@ export default function ProgresoPage() {
 
   return (
     <div className="px-4 md:px-8 pt-6 pb-4 space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">Progreso</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Últimas 12 semanas</p>
-      </div>
-
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Consistencia" value={`${consistencyPct}%`} sub="Últimos 84 días" trend="up" />

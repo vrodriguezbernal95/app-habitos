@@ -75,14 +75,11 @@ export default function HabitosPage() {
 
   return (
     <div className="px-4 md:px-8 pt-6 pb-4 space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">Hábitos</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {activeHabits.length} de {maxSlots} ranuras activas
-          </p>
-        </div>
+      {/* Subheader + new button */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {activeHabits.length} de {maxSlots} ranuras activas
+        </p>
         <button
           onClick={() => router.push("/crear")}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer tap-scale hover:opacity-90 transition-opacity duration-150"
