@@ -56,6 +56,7 @@ export async function POST(req: Request) {
         days: body.days ?? [],
         counterTarget: body.type === "counter" ? (body.counterTarget ?? 8) : null,
         reminder: body.reminder ?? null,
+        isActive: false,
         checkpoints: body.type === "checkpoints"
           ? { create: (body.checkpoints ?? []).map((cp: any) => ({ time: cp.time, label: cp.label })) }
           : undefined,

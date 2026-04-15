@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Lock, Pencil, Trash2, ToggleLeft, ToggleRight, MoreVertical } from "lucide-react";
+import { Plus, Lock, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Habit } from "@/lib/types";
 import { HabitIcon } from "@/lib/habit-icons";
@@ -227,18 +227,18 @@ function HabitRow({ habit, onEdit, onDelete, onToggle, canActivate = true }: Hab
       <button
         onClick={onToggle}
         disabled={!habit.isActive && !canActivate}
-        className={cn(
-          "shrink-0 cursor-pointer transition-all duration-150 tap-scale",
-          !habit.isActive && !canActivate && "opacity-30 cursor-not-allowed"
-        )}
         aria-label={habit.isActive ? "Desactivar" : "Activar"}
         title={!habit.isActive && !canActivate ? "Libera una ranura activa primero" : undefined}
-      >
-        {habit.isActive ? (
-          <ToggleRight size={28} className="text-primary" />
-        ) : (
-          <ToggleLeft size={28} className="text-muted-foreground" />
+        className={cn(
+          "relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer tap-scale focus:outline-none",
+          habit.isActive ? "bg-primary" : "bg-muted",
+          !habit.isActive && !canActivate && "opacity-30 cursor-not-allowed"
         )}
+      >
+        <span className={cn(
+          "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200",
+          habit.isActive ? "left-[calc(100%-1.375rem)]" : "left-0.5"
+        )} />
       </button>
 
       {/* More menu */}
