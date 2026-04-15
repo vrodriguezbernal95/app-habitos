@@ -28,6 +28,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Edición completa
   try {
+    // 1. Borrar checkpoints existentes
+    await prisma.checkpoint.deleteMany({ where: { habitId: id } });
+
+    // 2. Actualizar el hábito (y crear nuevos checkpoints si aplica)
     const updated = await prisma.habit.update({
       where: { id },
       data: {
@@ -39,15 +43,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         days: body.days ?? [],
         counterTarget: body.type === "counter" ? (body.counterTarget ?? 8) : null,
         reminder: body.reminder ?? null,
-        checkpoints: body.type === "checkpoints"
-          ? {
-              deleteMany: {},
-              create: (body.checkpoints ?? []).map((cp: { time: string; label: string }) => ({
-                time: cp.time,
-                label: cp.label,
-              })),
-            }
-          : { deleteMany: {} },
+        ...(body.type === "checkpoints" && {
+          checkpoints: {
+            create: (body.checkpoints ?? []).map((cp: { time: string; label: string }) => ({
+              time: cp.time,
+              label: cp.label,
+            })),
+          },
+        }),
       },
       include: { checkpoints: true },
     });
