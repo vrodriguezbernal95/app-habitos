@@ -7,6 +7,7 @@ import { StreakBadge } from "@/components/habits/StreakBadge";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Award } from "lucide-react";
 import type { Habit, DayRecord } from "@/lib/types";
+import { HabitIcon } from "@/lib/habit-icons";
 
 const TrendChart = dynamic(() => import("@/components/charts/TrendChart"), { ssr: false });
 
@@ -155,7 +156,7 @@ export default function ProgresoPage() {
                     : "bg-muted text-muted-foreground hover:bg-muted/70"
                 )}
               >
-                <span>{h.icon}</span>
+                <HabitIcon icon={h.icon} size={14} />
                 <span>{h.name}</span>
               </button>
             ))}
