@@ -10,8 +10,8 @@ import { HabitIcon } from "@/lib/habit-icons";
 // Requisitos para desbloquear más slots
 const SLOT_REQUIREMENTS = [
   { slots: 3, label: "3 hábitos", requirement: null },
-  { slots: 4, label: "4 hábitos", requirement: "Completa 3 hábitos sin fallar 30 días seguidos" },
-  { slots: 5, label: "5 hábitos", requirement: "Completa 4 hábitos sin fallar 60 días seguidos" },
+  { slots: 4, label: "4 hábitos", requirement: "Cumple 1 mes completando todos tus hábitos sin fallar ni un día" },
+  { slots: 5, label: "5 hábitos", requirement: "Mantén 4 hábitos activos durante 60 días seguidos sin fallar" },
 ];
 
 const MAX_UNLOCKED_DEFAULT = 3;
@@ -120,14 +120,18 @@ export default function HabitosPage() {
         {SLOT_REQUIREMENTS.slice(maxSlots).map((req) => (
           <div
             key={req.slots}
-            className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-muted/30 opacity-60"
+            className="flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed border-border bg-muted/20"
           >
-            <div className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center shrink-0">
-              <Lock size={18} className="text-muted-foreground" />
+            <div className="w-11 h-11 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
+              <Lock size={18} className="text-muted-foreground/60" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-muted-foreground">Ranura {req.slots} bloqueada</p>
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{req.requirement}</p>
+              <p className="text-sm font-semibold text-muted-foreground">
+                🔒 Ranura {req.slots} bloqueada
+              </p>
+              <p className="text-xs text-muted-foreground/80 mt-0.5 leading-relaxed">
+                {req.requirement}
+              </p>
             </div>
           </div>
         ))}

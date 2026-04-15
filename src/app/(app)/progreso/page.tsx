@@ -11,11 +11,19 @@ import { HabitIcon } from "@/lib/habit-icons";
 
 const TrendChart = dynamic(() => import("@/components/charts/TrendChart"), { ssr: false });
 
-const ACHIEVEMENTS = [
-  { id: "7d",  label: "7 días seguidos",   threshold: 7,  icon: "🔥" },
-  { id: "21d", label: "21 días seguidos",  threshold: 21, icon: "⭐" },
-  { id: "66d", label: "66 días seguidos",  threshold: 66, icon: "🏆" },
-  { id: "3h",  label: "3 hábitos activos", threshold: 3,  icon: "✦" },
+const ACHIEVEMENTS: { id: string; label: string; desc: string; type: "streak" | "days" | "habits"; threshold: number; icon: string }[] = [
+  { id: "1day",    label: "Primer brote",      desc: "Completa todos tus hábitos 1 día",    type: "days",   threshold: 1,   icon: "🌱" },
+  { id: "3d",      label: "Tres en raya",       desc: "3 días seguidos sin fallar",          type: "streak", threshold: 3,   icon: "🔥" },
+  { id: "7d",      label: "Una semana",         desc: "7 días seguidos sin fallar",          type: "streak", threshold: 7,   icon: "⚡" },
+  { id: "10days",  label: "Constante",          desc: "10 días completados en total",        type: "days",   threshold: 10,  icon: "📅" },
+  { id: "14d",     label: "Dos semanas",        desc: "14 días seguidos sin fallar",         type: "streak", threshold: 14,  icon: "💪" },
+  { id: "21d",     label: "21 días",            desc: "21 días seguidos sin fallar",         type: "streak", threshold: 21,  icon: "⭐" },
+  { id: "30d",     label: "Primer mes",         desc: "30 días seguidos sin fallar",         type: "streak", threshold: 30,  icon: "🎯" },
+  { id: "50days",  label: "Medio centenar",     desc: "50 días completados en total",        type: "days",   threshold: 50,  icon: "🧠" },
+  { id: "66d",     label: "El hábito es tuyo",  desc: "66 días seguidos (formación real)",   type: "streak", threshold: 66,  icon: "🏆" },
+  { id: "100days", label: "Centenario",         desc: "100 días completados en total",       type: "days",   threshold: 100, icon: "🌟" },
+  { id: "180d",    label: "Medio año",          desc: "180 días seguidos sin fallar",        type: "streak", threshold: 180, icon: "💎" },
+  { id: "365d",    label: "Un año",             desc: "365 días seguidos sin fallar",        type: "streak", threshold: 365, icon: "👑" },
 ];
 
 function computeGlobalRecords(allRecords: Record<string, DayRecord[]>): DayRecord[] {
@@ -100,9 +108,10 @@ export default function ProgresoPage() {
 
   const achievements = ACHIEVEMENTS.map((a) => ({
     ...a,
-    unlocked: a.id === "3h"
-      ? activeHabits.length >= a.threshold
-      : maxStreak >= a.threshold,
+    unlocked:
+      a.type === "habits" ? activeHabits.length >= a.threshold :
+      a.type === "days"   ? completedDays >= a.threshold :
+      maxStreak >= a.threshold,
   }));
 
   if (loading) {
@@ -196,10 +205,10 @@ export default function ProgresoPage() {
                 a.unlocked ? "bg-primary/5 border-primary/20" : "bg-muted/40 border-border opacity-50"
               )}
             >
-              <span className="text-2xl">{a.icon}</span>
-              <div>
-                <p className={cn("text-xs font-semibold", !a.unlocked && "text-muted-foreground")}>{a.label}</p>
-                <p className="text-[10px] text-muted-foreground">{a.unlocked ? "Conseguido" : "Bloqueado"}</p>
+              <span className={cn("text-2xl", !a.unlocked && "grayscale")}>{a.icon}</span>
+              <div className="min-w-0">
+                <p className={cn("text-xs font-semibold leading-tight", !a.unlocked && "text-muted-foreground")}>{a.label}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{a.unlocked ? "✓ Conseguido" : a.desc}</p>
               </div>
             </div>
           ))}

@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/daily",    label: "Hoy",      Icon: CalendarCheck },
   { href: "/habitos",  label: "Hábitos",  Icon: ListChecks    },
-  { href: "/liga",     label: "Liga",     Icon: Trophy        },
   { href: "/progreso", label: "Progreso", Icon: BarChart2     },
+  { href: "/liga",     label: "Liga",     Icon: Trophy        },
 ];
 
 export function Sidebar() {
