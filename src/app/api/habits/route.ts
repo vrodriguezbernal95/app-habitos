@@ -4,12 +4,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/habits — obtener todos los hábitos del usuario
-export async function GET() {
+// Acepta ?date=YYYY-MM-DD para usar la fecha local del cliente en vez de UTC del servidor
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const userId = (session.user as any).id;
-  const today = new Date().toISOString().split("T")[0];
+  const url = new URL(req.url);
+  const today = url.searchParams.get("date") ?? new Date().toISOString().split("T")[0];
 
   const habits = await prisma.habit.findMany({
     where: { userId, archivedAt: null },

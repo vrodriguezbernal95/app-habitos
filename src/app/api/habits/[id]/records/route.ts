@@ -30,7 +30,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
   const body = await req.json();
-  const today = new Date().toISOString().split("T")[0];
+  // Usar la fecha local del cliente si viene en el body, evita el desfase UTC
+  const today = body.date ?? new Date().toISOString().split("T")[0];
 
   const record = await prisma.habitRecord.upsert({
     where: { habitId_date: { habitId: id, date: today } },

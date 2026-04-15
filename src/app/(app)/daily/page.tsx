@@ -17,6 +17,12 @@ const MOTIVATIONAL_MESSAGES = [
   "El mejor momento para empezar fue ayer. El segundo mejor es ahora.",
 ];
 
+/** Fecha local del dispositivo en formato YYYY-MM-DD, sin desfase UTC */
+function localDateStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function getDayGreeting(): string {
   const h = new Date().getHours();
   if (h < 12) return "Buenos días";
@@ -98,7 +104,7 @@ export default function DailyPage() {
   const prevAllDoneRef = useRef(false);
 
   useEffect(() => {
-    fetch("/api/habits")
+    fetch(`/api/habits?date=${localDateStr()}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setHabits(data);
@@ -147,7 +153,7 @@ export default function DailyPage() {
     await fetch(`/api/habits/${habitId}/records`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed, completionRate: completed ? 1 : 0, ...extra }),
+      body: JSON.stringify({ completed, completionRate: completed ? 1 : 0, date: localDateStr(), ...extra }),
     });
   };
 
