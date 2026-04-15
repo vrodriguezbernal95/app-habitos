@@ -17,7 +17,7 @@ const weeklyTrend = [
 export default function TrendChart() {
   return (
     <div className="h-36 rounded-2xl overflow-hidden bg-card border border-border p-3">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
         <AreaChart data={weeklyTrend} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
           <defs>
             <linearGradient id="tealGrad" x1="0" y1="0" x2="0" y2="1">

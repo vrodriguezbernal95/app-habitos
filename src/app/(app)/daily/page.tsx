@@ -110,6 +110,11 @@ export default function DailyPage() {
     );
   };
 
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/habits/${id}`, { method: "DELETE" });
+    setHabits((prev) => prev.filter((h) => h.id !== id));
+  };
+
   const motivationMsg = MOTIVATIONAL_MESSAGES[new Date().getDate() % MOTIVATIONAL_MESSAGES.length];
 
   if (loading) {
@@ -165,6 +170,7 @@ export default function DailyPage() {
             onToggle={handleToggle}
             onCheckpointChange={handleCheckpointChange}
             onCounterChange={handleCounterChange}
+            onDelete={handleDelete}
           />
         ))}
 

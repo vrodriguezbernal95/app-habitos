@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Check, ChevronDown, ChevronUp, X, Plus, Minus } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Check, ChevronDown, ChevronUp, X, Plus, Minus, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { StreakBadge } from "./StreakBadge";
 import { ContextTagPicker } from "./ContextTagPicker";
@@ -14,12 +15,28 @@ interface HabitCardProps {
   onToggle: (id: string) => void;
   onCheckpointChange: (habitId: string, checkpointId: string, done: boolean, contexts?: FailContext[]) => void;
   onCounterChange: (habitId: string, delta: number) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function HabitCard({ habit, onToggle, onCheckpointChange, onCounterChange }: HabitCardProps) {
+export function HabitCard({ habit, onToggle, onCheckpointChange, onCounterChange, onDelete }: HabitCardProps) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [failDialogOpen, setFailDialogOpen] = useState(false);
   const [pendingFail, setPendingFail] = useState<{ checkpointId: string } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   const handleCheckpointTap = (cp: Checkpoint) => {
     if (cp.status === "done") return;
@@ -147,6 +164,35 @@ export function HabitCard({ habit, onToggle, onCheckpointChange, onCounterChange
               </button>
             </div>
           )}
+
+          {/* More menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground cursor-pointer tap-scale hover:bg-muted transition-all duration-150"
+              aria-label="Más opciones"
+            >
+              <MoreVertical size={16} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-9 z-50 w-36 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+                <button
+                  onClick={() => { setMenuOpen(false); router.push(`/editar/${habit.id}`); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors duration-150 cursor-pointer"
+                >
+                  <Pencil size={14} className="text-muted-foreground" />
+                  Editar
+                </button>
+                <button
+                  onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors duration-150 cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                  Eliminar
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Progress bar for counter */}
@@ -196,6 +242,35 @@ export function HabitCard({ habit, onToggle, onCheckpointChange, onCounterChange
               setPendingFail(null);
             }}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm delete dialog */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="max-w-sm mx-4 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg">¿Eliminar hábito?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Se archivará <span className="font-semibold text-foreground">{habit.name}</span> y no aparecerá en tu lista. El historial se conserva.
+          </p>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="flex-1 h-10 rounded-xl border border-border text-sm font-medium cursor-pointer hover:bg-muted transition-colors duration-150"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                setConfirmDelete(false);
+                onDelete?.(habit.id);
+              }}
+              className="flex-1 h-10 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity duration-150"
+            >
+              Eliminar
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
