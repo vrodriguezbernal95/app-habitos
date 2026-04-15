@@ -31,6 +31,7 @@ export interface Habit {
   type: HabitType;
   frequency: HabitFrequency;
   days?: number[]; // 0=Sun...6=Sat
+  isActive: boolean;
   streak: number;
   bestStreak: number;
   completedToday: boolean;

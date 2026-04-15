@@ -17,6 +17,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const body = await req.json();
 
+  // Toggle rápido de isActive
+  if ("isActive" in body && Object.keys(body).length === 1) {
+    const updated = await prisma.habit.update({
+      where: { id },
+      data: { isActive: body.isActive },
+    });
+    return NextResponse.json(updated);
+  }
+
+  // Edición completa
   const updated = await prisma.habit.update({
     where: { id },
     data: {

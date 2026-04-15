@@ -45,8 +45,10 @@ export default function DailyPage() {
 
   const todayHabits = habits.filter(
     (h) =>
-      h.frequency === "daily" ||
-      (h.frequency === "custom" && h.days?.includes(new Date().getDay()))
+      h.isActive &&
+      (h.frequency === "daily" ||
+        h.frequency === "weekly" ||
+        (h.frequency === "custom" && h.days?.includes(new Date().getDay())))
   );
 
   const completedCount = todayHabits.filter((h) => {
