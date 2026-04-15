@@ -46,6 +46,7 @@ model User {
   accounts Account[]
   sessions Session[]
   habits   Habit[]
+  leagues  LeagueMember[]
 }
 
 model VerificationToken {
@@ -129,4 +130,42 @@ enum CheckStatus {
   pending
   done
   failed
+}
+
+// ── Liga models ───────────────────────────────────────────────────────────────
+
+model League {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  members     LeagueMember[]
+  weekResults LeagueWeekResult[]
+}
+
+model LeagueMember {
+  id       String   @id @default(cuid())
+  leagueId String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId])
+}
+
+model LeagueWeekResult {
+  id          String   @id @default(cuid())
+  leagueId    String
+  weekStart   String
+  winnerId    String
+  winnerName  String
+  winnerScore Float
+  closedAt    DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, weekStart])
 }
