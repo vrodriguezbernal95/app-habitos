@@ -65,13 +65,13 @@ export function ConsistencyHeatmap({ records, className }: ConsistencyHeatmapPro
   const isAchievement =
     pastCells.length >= 14 && pastCells.every((c) => c.completed);
 
-  // 4 blocks of 3 weeks
-  const blocks = [weeks.slice(0, 3), weeks.slice(3, 6), weeks.slice(6, 9), weeks.slice(9, 12)];
+  // 3 blocks of 4 weeks
+  const blocks = [weeks.slice(0, 4), weeks.slice(4, 8), weeks.slice(8, 12)];
 
   // Label for each block: show month(s) of first day
   const blockLabels = blocks.map((block) => {
     const firstMonth = new Date(block[0][0].date).getMonth();
-    const lastMonth = new Date(block[2][6].date).getMonth();
+    const lastMonth = new Date(block[3][6].date).getMonth();
     return firstMonth === lastMonth
       ? MONTHS_ES[firstMonth]
       : `${MONTHS_ES[firstMonth]}–${MONTHS_ES[lastMonth]}`;
@@ -103,9 +103,9 @@ export function ConsistencyHeatmap({ records, className }: ConsistencyHeatmapPro
             ))}
           </div>
 
-          {/* 4 blocks */}
+          {/* 3 blocks */}
           {blocks.map((block, bi) => (
-            <div key={bi} className={cn("flex flex-col", bi < 3 && "mr-3")}>
+            <div key={bi} className={cn("flex flex-col", bi < 2 && "mr-3")}>
               {/* Month label */}
               <div className="h-5 mb-0.5 text-[10px] text-muted-foreground font-semibold flex items-center">
                 {blockLabels[bi]}
