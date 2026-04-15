@@ -136,11 +136,15 @@ export default function DailyPage() {
   const hour = new Date().getHours();
   const inDanger = hour >= 21 && todayHabits.length > 0 && !allDone;
 
+  const hapticEnabled = () =>
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem("setting_haptic") !== "false";
+
   // Lanza confetti + vibración cuando se completan todos los hábitos del día
   useEffect(() => {
     if (allDone && !prevAllDoneRef.current) {
       setShowConfetti(true);
-      if (typeof navigator !== "undefined" && navigator.vibrate) {
+      if (hapticEnabled() && typeof navigator !== "undefined" && navigator.vibrate) {
         navigator.vibrate([60, 40, 100]);
       }
       const t = setTimeout(() => setShowConfetti(false), 3000);
@@ -158,7 +162,7 @@ export default function DailyPage() {
   };
 
   const handleToggle = (id: string) => {
-    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(15);
+    if (hapticEnabled() && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(15);
     setHabits((prev) => {
       const updated = prev.map((h) =>
         h.id === id ? { ...h, completedToday: !h.completedToday } : h

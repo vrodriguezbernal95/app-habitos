@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Menu, Sun, Moon, LogOut, X } from "lucide-react";
+import { Menu, Sun, Moon, LogOut, X, Smartphone } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/layout/ThemeProvider";
@@ -23,10 +23,22 @@ function usePageTitle() {
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [hapticOn, setHapticOn] = useState(true);
   const { theme, toggle } = useTheme();
   const { data: session } = useSession();
   const menuRef = useRef<HTMLDivElement>(null);
   const { title, sub } = usePageTitle();
+
+  useEffect(() => {
+    const stored = localStorage.getItem("setting_haptic");
+    if (stored !== null) setHapticOn(stored === "true");
+  }, []);
+
+  const toggleHaptic = () => {
+    const next = !hapticOn;
+    setHapticOn(next);
+    localStorage.setItem("setting_haptic", String(next));
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +98,23 @@ export function Header() {
                 <Moon size={16} className="text-muted-foreground" />
               )}
               <span>{theme === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+            </button>
+
+            <button
+              onClick={toggleHaptic}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors duration-150 cursor-pointer"
+            >
+              <Smartphone size={16} className="text-muted-foreground" />
+              <span className="flex-1 text-left">Vibración</span>
+              <div className={cn(
+                "relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0",
+                hapticOn ? "bg-primary" : "bg-muted-foreground/30"
+              )}>
+                <span className={cn(
+                  "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200",
+                  hapticOn ? "left-[calc(100%-1.125rem)]" : "left-0.5"
+                )} />
+              </div>
             </button>
 
             <div className="border-t border-border" />
