@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { ConsistencyHeatmap } from "@/components/charts/ConsistencyHeatmap";
 import { StreakBadge } from "@/components/habits/StreakBadge";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, AlertTriangle, Award } from "lucide-react";
+import { TrendingUp, TrendingDown, Award } from "lucide-react";
 import type { Habit, DayRecord } from "@/lib/types";
 
 const TrendChart = dynamic(() => import("@/components/charts/TrendChart"), { ssr: false });
@@ -17,40 +17,67 @@ const ACHIEVEMENTS = [
   { id: "3h",  label: "3 hábitos activos", threshold: 3,  icon: "✦" },
 ];
 
+function computeGlobalRecords(allRecords: Record<string, DayRecord[]>): DayRecord[] {
+  const habitIds = Object.keys(allRecords);
+  if (habitIds.length === 0) return [];
+
+  const dateMap: Record<string, { rates: number[]; completed: boolean[] }> = {};
+  habitIds.forEach((hid) => {
+    (allRecords[hid] ?? []).forEach((r) => {
+      if (!dateMap[r.date]) dateMap[r.date] = { rates: [], completed: [] };
+      dateMap[r.date].rates.push(r.completionRate);
+      dateMap[r.date].completed.push(r.completed);
+    });
+  });
+
+  return Object.entries(dateMap)
+    .map(([date, { rates, completed }]) => ({
+      date,
+      habitId: "global",
+      completed: completed.every(Boolean),
+      completionRate: rates.reduce((a, b) => a + b, 0) / rates.length,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export default function ProgresoPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [records, setRecords] = useState<DayRecord[]>([]);
-  const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
+  const [allRecords, setAllRecords] = useState<Record<string, DayRecord[]>>({});
+  const [selectedId, setSelectedId] = useState<string>("global");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/habits")
       .then((r) => r.json())
-      .then((data: Habit[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setHabits(data);
-          setSelectedHabitId(data[0].id);
-          return fetch(`/api/habits/${data[0].id}/records`);
+      .then(async (data: Habit[]) => {
+        if (!Array.isArray(data) || data.length === 0) {
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-        return null;
-      })
-      .then((r) => r?.json())
-      .then((data) => {
-        if (data) setRecords(Array.isArray(data) ? data : []);
+        setHabits(data);
+
+        const active = data.filter((h) => h.isActive);
+        const entries = await Promise.all(
+          active.map((h) =>
+            fetch(`/api/habits/${h.id}/records`)
+              .then((r) => r.json())
+              .then((recs) => [h.id, Array.isArray(recs) ? recs : []] as [string, DayRecord[]])
+          )
+        );
+        setAllRecords(Object.fromEntries(entries));
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  const handleSelectHabit = (id: string) => {
-    setSelectedHabitId(id);
-    fetch(`/api/habits/${id}/records`)
-      .then((r) => r.json())
-      .then((data) => setRecords(Array.isArray(data) ? data : []));
-  };
+  // Records for the selected view (global or specific habit)
+  const records = useMemo<DayRecord[]>(() => {
+    if (selectedId === "global") return computeGlobalRecords(allRecords);
+    return allRecords[selectedId] ?? [];
+  }, [selectedId, allRecords]);
 
-  const habit = habits.find((h) => h.id === selectedHabitId);
+  const habit = habits.find((h) => h.id === selectedId);
+  const activeHabits = habits.filter((h) => h.isActive);
 
   const completedDays = records.filter((r) => r.completed).length;
   const totalDays = records.length;
@@ -66,28 +93,23 @@ export default function ProgresoPage() {
   });
   const worstDay = [...dayFailRates].sort((a, b) => b.rate - a.rate)[0];
 
+  const maxStreak = selectedId === "global"
+    ? Math.max(0, ...activeHabits.map((h) => h.streak ?? 0))
+    : (habit?.streak ?? 0);
+
   const achievements = ACHIEVEMENTS.map((a) => ({
     ...a,
     unlocked: a.id === "3h"
-      ? habits.length >= a.threshold
-      : (habit?.streak ?? 0) >= a.threshold,
+      ? activeHabits.length >= a.threshold
+      : maxStreak >= a.threshold,
   }));
-
-  // Rellenar heatmap con 84 días (vacíos donde no hay registro)
-  const heatmapRecords: DayRecord[] = Array.from({ length: 84 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (83 - i));
-    const dateStr = d.toISOString().split("T")[0];
-    const found = records.find((r) => r.date === dateStr);
-    return found ?? { date: dateStr, habitId: selectedHabitId ?? "", completed: false, completionRate: 0 };
-  });
 
   if (loading) {
     return (
       <div className="px-4 md:px-8 pt-6 pb-4 space-y-4">
         <div className="h-8 w-32 bg-muted animate-pulse rounded-xl" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1,2,3,4].map(i => <div key={i} className="h-24 bg-muted animate-pulse rounded-2xl" />)}
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-muted animate-pulse rounded-2xl" />)}
         </div>
       </div>
     );
@@ -104,23 +126,37 @@ export default function ProgresoPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Consistencia" value={`${consistencyPct}%`} sub="Últimos 84 días" trend="up" />
-        <StatCard label="Racha activa" value={`${habit?.streak ?? 0}d`} sub={`Máx: ${habit?.bestStreak ?? 0}d`} trend="up" />
-        <StatCard label="Hábitos activos" value={String(habits.length)} sub="Esta semana" trend="neutral" />
+        <StatCard label="Racha activa" value={`${maxStreak}d`} sub={`Hábito seleccionado`} trend="up" />
+        <StatCard label="Hábitos activos" value={String(activeHabits.length)} sub="Esta semana" trend="neutral" />
         <StatCard label="Día débil" value={worstDay?.day ?? "—"} sub={`${Math.round((worstDay?.rate ?? 0) * 100)}% fallos`} trend="down" />
       </div>
 
       {/* Habit selector */}
-      {habits.length > 0 && (
+      {activeHabits.length > 0 && (
         <div>
           <p className="text-sm font-semibold mb-2">Ver por hábito</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {habits.map((h) => (
+            {/* Global tab */}
+            <button
+              onClick={() => setSelectedId("global")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 cursor-pointer tap-scale transition-all duration-150",
+                selectedId === "global"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
+              )}
+            >
+              <span>✦</span>
+              <span>Global</span>
+            </button>
+
+            {activeHabits.map((h) => (
               <button
                 key={h.id}
-                onClick={() => handleSelectHabit(h.id)}
+                onClick={() => setSelectedId(h.id)}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 cursor-pointer tap-scale transition-all duration-150",
-                  selectedHabitId === h.id
+                  selectedId === h.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/70"
                 )}
@@ -134,20 +170,20 @@ export default function ProgresoPage() {
       )}
 
       {/* Heatmap */}
-      {habits.length > 0 && (
+      {activeHabits.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Mapa de consistencia</p>
-            <StreakBadge streak={habit?.streak ?? 0} size="sm" />
+            <StreakBadge streak={maxStreak} size="sm" />
           </div>
-          <ConsistencyHeatmap records={heatmapRecords} className="overflow-x-auto" />
+          <ConsistencyHeatmap records={records} />
         </div>
       )}
 
       {/* Weekly trend chart */}
       <div className="space-y-3">
         <p className="text-sm font-semibold">Tendencia semanal</p>
-        <TrendChart />
+        <TrendChart records={records} />
       </div>
 
       {/* Achievements */}

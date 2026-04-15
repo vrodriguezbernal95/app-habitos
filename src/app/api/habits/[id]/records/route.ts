@@ -9,10 +9,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { id } = await params;
+
+  // Últimos 90 días (suficiente para cubrir la ventana de 12 semanas alineada a lunes)
+  const start = new Date();
+  start.setDate(start.getDate() - 90);
+  const startStr = start.toISOString().split("T")[0];
+
   const records = await prisma.habitRecord.findMany({
-    where: { habitId: id },
+    where: { habitId: id, date: { gte: startStr } },
     orderBy: { date: "asc" },
-    take: 84,
   });
 
   return NextResponse.json(records);
