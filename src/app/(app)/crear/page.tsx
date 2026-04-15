@@ -68,8 +68,12 @@ export default function CrearPage() {
     else router.back();
   };
 
-  const handleSave = () => {
-    // TODO: save to Supabase
+  const handleSave = async () => {
+    await fetch("/api/habits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(habit),
+    });
     router.push("/daily");
   };
 
