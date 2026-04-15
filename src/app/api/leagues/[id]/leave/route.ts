@@ -6,13 +6,13 @@ import { prisma } from "@/lib/prisma";
 // DELETE /api/leagues/[id]/leave
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const userId = (session.user as any).id;
-  const leagueId = params.id;
+  const { id: leagueId } = await params;
 
   await prisma.leagueMember.deleteMany({
     where: { leagueId, userId },
