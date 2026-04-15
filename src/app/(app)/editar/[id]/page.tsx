@@ -36,6 +36,7 @@ export default function EditarPage() {
   const [habit, setHabit] = useState<EditHabit | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/habits")
@@ -63,13 +64,28 @@ export default function EditarPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading || !habit) {
+  if (loading) {
     return (
       <div className="px-4 md:px-8 pt-6 pb-4 space-y-4">
         <div className="h-8 w-48 bg-muted animate-pulse rounded-xl" />
         <div className="space-y-3 pt-4">
           {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-2xl" />)}
         </div>
+      </div>
+    );
+  }
+
+  if (!habit) {
+    return (
+      <div className="px-4 md:px-8 pt-6 pb-4 text-center space-y-3">
+        <p className="font-heading text-lg font-semibold">Hábito no encontrado</p>
+        <p className="text-sm text-muted-foreground">No se pudo cargar este hábito.</p>
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer"
+        >
+          Volver
+        </button>
       </div>
     );
   }
@@ -91,12 +107,22 @@ export default function EditarPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch(`/api/habits/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(habit),
-    });
-    router.push("/daily");
+    setError(null);
+    try {
+      const res = await fetch(`/api/habits/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(habit),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Error al guardar");
+      }
+      router.push("/habitos");
+    } catch (e: any) {
+      setError(e.message ?? "Error al guardar los cambios");
+      setSaving(false);
+    }
   };
 
   const toggleDay = (d: number) => {
@@ -173,6 +199,9 @@ export default function EditarPage() {
 
       {/* CTA */}
       <div className="pt-6">
+        {error && (
+          <p className="text-sm text-destructive text-center mb-3">{error}</p>
+        )}
         <Button
           onClick={handleNext}
           disabled={!canNext() || saving}

@@ -27,31 +27,36 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   // Edición completa
-  const updated = await prisma.habit.update({
-    where: { id },
-    data: {
-      name: body.name,
-      icon: body.icon,
-      color: body.color,
-      type: body.type,
-      frequency: body.frequency,
-      days: body.days ?? [],
-      counterTarget: body.counterTarget ?? null,
-      reminder: body.reminder ?? null,
-      checkpoints: body.type === "checkpoints"
-        ? {
-            deleteMany: {},
-            create: (body.checkpoints ?? []).map((cp: { time: string; label: string }) => ({
-              time: cp.time,
-              label: cp.label,
-            })),
-          }
-        : { deleteMany: {} },
-    },
-    include: { checkpoints: true },
-  });
+  try {
+    const updated = await prisma.habit.update({
+      where: { id },
+      data: {
+        name: body.name,
+        icon: body.icon,
+        color: body.color,
+        type: body.type,
+        frequency: body.frequency,
+        days: body.days ?? [],
+        counterTarget: body.type === "counter" ? (body.counterTarget ?? 8) : null,
+        reminder: body.reminder ?? null,
+        checkpoints: body.type === "checkpoints"
+          ? {
+              deleteMany: {},
+              create: (body.checkpoints ?? []).map((cp: { time: string; label: string }) => ({
+                time: cp.time,
+                label: cp.label,
+              })),
+            }
+          : { deleteMany: {} },
+      },
+      include: { checkpoints: true },
+    });
 
-  return NextResponse.json(updated);
+    return NextResponse.json(updated);
+  } catch (e: any) {
+    console.error("Error actualizando hábito:", e);
+    return NextResponse.json({ error: e.message ?? "Error interno" }, { status: 500 });
+  }
 }
 
 // DELETE /api/habits/[id] — archivar hábito
