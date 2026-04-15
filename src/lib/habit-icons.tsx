@@ -2,7 +2,7 @@ import {
   Dumbbell, Footprints, Bike, Activity, Zap, Timer,
   Droplets, Apple, Pill, Coffee, UtensilsCrossed, Moon,
   Brain, Heart, Leaf, Wind, Sun, Flame,
-  BookOpen, NotebookPen, GraduationCap, Music, SmartphoneOff, PiggyBank,
+  BookOpen, NotebookPen, GraduationCap, Music, PhoneOff, PiggyBank,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -40,7 +40,7 @@ export const HABIT_ICONS: HabitIconDef[] = [
   { id: "notebook",     label: "Journaling",     Icon: NotebookPen,    category: "productividad" },
   { id: "graduation",   label: "Estudiar",       Icon: GraduationCap,  category: "productividad" },
   { id: "music",        label: "Música",         Icon: Music,          category: "productividad" },
-  { id: "no-phone",     label: "Sin móvil",      Icon: SmartphoneOff,  category: "productividad" },
+  { id: "no-phone",     label: "Sin móvil",      Icon: PhoneOff,       category: "productividad" },
   { id: "savings",      label: "Ahorro",         Icon: PiggyBank,      category: "productividad" },
 ];
 
