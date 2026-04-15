@@ -2,18 +2,19 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Trophy,
-  Plus,
-  ArrowRight,
-  ChevronLeft,
-  Copy,
-  Check,
-  MoreVertical,
-  LogOut,
+  Trophy, Plus, ArrowRight, ChevronLeft, ChevronRight,
+  Copy, Check, MoreVertical, LogOut, Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface LeagueSummary {
+  id: string;
+  name: string;
+  code: string;
+  memberCount: number;
+}
 
 interface RankingEntry {
   userId: string;
@@ -30,7 +31,7 @@ interface HistoryEntry {
   winnerScore: number;
 }
 
-interface LeagueData {
+interface LeagueDetail {
   id: string;
   name: string;
   code: string;
@@ -41,7 +42,7 @@ interface LeagueData {
   myUserId: string;
 }
 
-type View = "loading" | "empty" | "creating" | "joining" | "league";
+type View = "loading" | "list" | "creating" | "joining" | "detail";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,31 +53,18 @@ function formatWeekDate(dateStr: string): string {
   });
 }
 
-function getMedalOrNumber(position: number): { medal: string | null; num: number | null } {
-  if (position === 1) return { medal: "🥇", num: null };
-  if (position === 2) return { medal: "🥈", num: null };
-  if (position === 3) return { medal: "🥉", num: null };
-  return { medal: null, num: position };
+function getMedal(position: number): string | null {
+  if (position === 1) return "🥇";
+  if (position === 2) return "🥈";
+  if (position === 3) return "🥉";
+  return null;
 }
 
 function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  return name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2);
 }
 
-const AVATAR_COLORS = [
-  "bg-teal-500",
-  "bg-emerald-500",
-  "bg-sky-500",
-  "bg-violet-500",
-  "bg-rose-500",
-  "bg-amber-500",
-];
-
+const AVATAR_COLORS = ["bg-teal-500", "bg-emerald-500", "bg-sky-500", "bg-violet-500", "bg-rose-500", "bg-amber-500"];
 function avatarColor(userId: string): string {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) hash = (hash + userId.charCodeAt(i)) % AVATAR_COLORS.length;
@@ -87,39 +75,42 @@ function avatarColor(userId: string): string {
 
 export default function LigaPage() {
   const [view, setView] = useState<View>("loading");
-  const [leagueData, setLeagueData] = useState<LeagueData | null>(null);
+  const [leagues, setLeagues] = useState<LeagueSummary[]>([]);
+  const [detail, setDetail] = useState<LeagueDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  // Forms
   const [newName, setNewName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  // Copy state
   const [copied, setCopied] = useState(false);
-
-  // Menu open
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const loadLeague = useCallback(async () => {
+  const loadList = useCallback(async () => {
     try {
       const res = await fetch("/api/leagues");
-      const data = await res.json();
-      if (data) {
-        setLeagueData(data);
-        setView("league");
-      } else {
-        setLeagueData(null);
-        setView("empty");
-      }
+      const data: LeagueSummary[] = await res.json();
+      setLeagues(Array.isArray(data) ? data : []);
+      setView("list");
     } catch {
-      setView("empty");
+      setLeagues([]);
+      setView("list");
     }
   }, []);
 
-  useEffect(() => {
-    loadLeague();
-  }, [loadLeague]);
+  useEffect(() => { loadList(); }, [loadList]);
+
+  const loadDetail = useCallback(async (id: string) => {
+    setDetailLoading(true);
+    setDetail(null);
+    setView("detail");
+    try {
+      const res = await fetch(`/api/leagues/${id}`);
+      const data = await res.json();
+      setDetail(data);
+    } catch { /* ignore */ }
+    finally { setDetailLoading(false); }
+  }, []);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -138,8 +129,8 @@ export default function LigaPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Error al crear la liga"); return; }
       setNewName("");
-      setLeagueData(data);
-      setView("league");
+      await loadList();
+      loadDetail(data.id);
     } catch {
       setError("Error de conexión");
     } finally {
@@ -162,7 +153,8 @@ export default function LigaPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Error al unirse"); return; }
       setJoinCode("");
-      await loadLeague();
+      await loadList();
+      setView("list");
     } catch {
       setError("Error de conexión");
     } finally {
@@ -171,23 +163,32 @@ export default function LigaPage() {
   }
 
   async function handleLeave() {
-    if (!leagueData) return;
+    if (!detail) return;
     setMenuOpen(false);
-    if (!confirm("¿Seguro que quieres salir de la liga?")) return;
+    if (!confirm("¿Seguro que quieres salir de esta liga?")) return;
     try {
-      await fetch(`/api/leagues/${leagueData.id}/leave`, { method: "DELETE" });
-      setLeagueData(null);
-      setView("empty");
-    } catch {
-      // ignore
-    }
+      await fetch(`/api/leagues/${detail.id}/leave`, { method: "DELETE" });
+      setDetail(null);
+      await loadList();
+      setView("list");
+    } catch { /* ignore */ }
   }
 
   function handleCopyCode() {
-    if (!leagueData) return;
-    navigator.clipboard.writeText(leagueData.code);
+    if (!detail) return;
+    navigator.clipboard.writeText(detail.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function goBack() {
+    if (view === "creating" || view === "joining") {
+      setError("");
+      setView("list");
+    } else if (view === "detail") {
+      setDetail(null);
+      setView("list");
+    }
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -200,45 +201,99 @@ export default function LigaPage() {
     );
   }
 
-  if (view === "empty") {
+  // ── List view ────────────────────────────────────────────────────────────────
+
+  if (view === "list") {
     return (
-      <div className="px-4 md:px-8 pt-6 pb-4">
-        <div className="flex flex-col items-center text-center gap-6 mt-8">
-          <Trophy size={48} className="text-primary" />
-          <div className="space-y-1">
-            <h1 className="font-heading text-2xl font-semibold">Compite con tus amigos</h1>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-              Crea una liga privada o únete a una con un código. El que más hábitos cumpla cada semana, gana.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+      <div className="px-4 md:px-8 pt-6 pb-4 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {leagues.length === 0 ? "Sin ligas" : `${leagues.length} liga${leagues.length > 1 ? "s" : ""}`}
+          </p>
+          <div className="flex gap-2">
             <button
-              onClick={() => { setError(""); setView("creating"); }}
-              className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-border bg-card active:scale-95 transition-transform"
+              onClick={() => { setError(""); setJoinCode(""); setView("joining"); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border text-sm font-medium cursor-pointer tap-scale hover:bg-muted transition-colors duration-150"
             >
-              <Plus size={24} className="text-primary" />
-              <span className="text-sm font-medium">Crear liga</span>
+              <ArrowRight size={14} />
+              Unirse
             </button>
             <button
-              onClick={() => { setError(""); setView("joining"); }}
-              className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-border bg-card active:scale-95 transition-transform"
+              onClick={() => { setError(""); setNewName(""); setView("creating"); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer tap-scale hover:opacity-90 transition-opacity duration-150"
             >
-              <ArrowRight size={24} className="text-primary" />
-              <span className="text-sm font-medium">Unirse con código</span>
+              <Plus size={14} />
+              Nueva
             </button>
           </div>
         </div>
+
+        {/* Empty state */}
+        {leagues.length === 0 && (
+          <div className="flex flex-col items-center text-center gap-5 mt-12">
+            <Trophy size={48} className="text-primary" />
+            <div className="space-y-1">
+              <h1 className="font-heading text-xl font-semibold">Compite con tus amigos</h1>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Crea una liga privada o únete con un código. El que más hábitos cumpla cada semana, gana.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+              <button
+                onClick={() => { setError(""); setNewName(""); setView("creating"); }}
+                className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-border bg-card cursor-pointer tap-scale hover:border-primary hover:bg-primary/5 transition-all duration-150"
+              >
+                <Plus size={24} className="text-primary" />
+                <span className="text-sm font-medium">Crear liga</span>
+              </button>
+              <button
+                onClick={() => { setError(""); setJoinCode(""); setView("joining"); }}
+                className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-border bg-card cursor-pointer tap-scale hover:border-primary hover:bg-primary/5 transition-all duration-150"
+              >
+                <ArrowRight size={24} className="text-primary" />
+                <span className="text-sm font-medium">Unirse con código</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* League cards */}
+        {leagues.length > 0 && (
+          <div className="space-y-2">
+            {leagues.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => loadDetail(l.id)}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:bg-primary/5 transition-all duration-150 cursor-pointer tap-scale text-left"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Trophy size={20} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{l.name}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Users size={11} />
+                    {l.memberCount} miembro{l.memberCount !== 1 ? "s" : ""}
+                    <span className="mx-1">·</span>
+                    <span className="font-mono tracking-wide">{l.code}</span>
+                  </p>
+                </div>
+                <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
+  // ── Create view ──────────────────────────────────────────────────────────────
+
   if (view === "creating") {
     return (
       <div className="px-4 md:px-8 pt-6 pb-4 space-y-6">
-        <button
-          onClick={() => setView("empty")}
-          className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95 transition-transform"
-        >
+        <button onClick={goBack} className="flex items-center gap-1 text-sm text-muted-foreground cursor-pointer tap-scale">
           <ChevronLeft size={16} /> Volver
         </button>
         <h1 className="font-heading text-xl font-semibold">Nueva liga</h1>
@@ -250,15 +305,15 @@ export default function LigaPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               maxLength={30}
-              placeholder="Ej. Los campeones"
+              placeholder="Ej. Los campeones del trabajo"
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
             />
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-95 transition-transform disabled:opacity-60"
+            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm cursor-pointer tap-scale hover:opacity-90 disabled:opacity-60 transition-opacity"
           >
             {submitting ? "Creando..." : "Crear liga"}
           </button>
@@ -267,13 +322,12 @@ export default function LigaPage() {
     );
   }
 
+  // ── Join view ────────────────────────────────────────────────────────────────
+
   if (view === "joining") {
     return (
       <div className="px-4 md:px-8 pt-6 pb-4 space-y-6">
-        <button
-          onClick={() => setView("empty")}
-          className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95 transition-transform"
-        >
+        <button onClick={goBack} className="flex items-center gap-1 text-sm text-muted-foreground cursor-pointer tap-scale">
           <ChevronLeft size={16} /> Volver
         </button>
         <h1 className="font-heading text-xl font-semibold">Únete a una liga</h1>
@@ -289,11 +343,11 @@ export default function LigaPage() {
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-lg font-mono tracking-widest text-center outline-none focus:border-primary transition-colors"
             />
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-95 transition-transform disabled:opacity-60"
+            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm cursor-pointer tap-scale hover:opacity-90 disabled:opacity-60 transition-opacity"
           >
             {submitting ? "Uniéndose..." : "Unirse"}
           </button>
@@ -302,29 +356,42 @@ export default function LigaPage() {
     );
   }
 
-  // ── League view ──────────────────────────────────────────────────────────────
+  // ── Detail view ──────────────────────────────────────────────────────────────
 
-  if (view === "league" && leagueData) {
-    const { name, code, rankings, history, weekStart, todayStr, myUserId } = leagueData;
+  if (view === "detail") {
+    if (detailLoading || !detail) {
+      return (
+        <div className="px-4 md:px-8 pt-6 pb-4 space-y-4">
+          <button onClick={goBack} className="flex items-center gap-1 text-sm text-muted-foreground cursor-pointer tap-scale">
+            <ChevronLeft size={16} /> Mis ligas
+          </button>
+          <div className="flex items-center justify-center h-48">
+            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          </div>
+        </div>
+      );
+    }
 
-    const weekStartDisplay = formatWeekDate(weekStart);
-    const todayDisplay = new Date(todayStr + "T12:00:00").toLocaleDateString("es-ES", {
-      weekday: "short",
-      day: "numeric",
-    });
+    const { name, code, rankings, history, weekStart, myUserId } = detail;
 
     return (
       <div className="px-4 md:px-8 pt-6 pb-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="font-heading text-xl font-semibold truncate mr-2">{name}</h1>
+        {/* Back + header */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={goBack}
+            className="w-9 h-9 rounded-full border border-border flex items-center justify-center cursor-pointer tap-scale hover:bg-muted transition-colors shrink-0"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <h1 className="font-heading text-xl font-semibold flex-1 truncate">{name}</h1>
           <div className="flex items-center gap-2 shrink-0">
-            {/* Code badge + copy */}
+            {/* Code + copy */}
             <div className="flex items-center gap-1 bg-muted px-2 py-1 rounded-lg">
               <span className="font-mono text-sm tracking-wider">{code}</span>
               <button
                 onClick={handleCopyCode}
-                className="p-0.5 rounded active:scale-90 transition-transform text-muted-foreground hover:text-foreground"
+                className="p-0.5 rounded cursor-pointer tap-scale text-muted-foreground hover:text-foreground"
                 title="Copiar código"
               >
                 {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
@@ -334,20 +401,17 @@ export default function LigaPage() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="p-1.5 rounded-xl hover:bg-muted active:scale-90 transition-transform"
+                className="p-1.5 rounded-xl hover:bg-muted cursor-pointer tap-scale transition-colors"
               >
                 <MoreVertical size={18} />
               </button>
               {menuOpen && (
                 <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setMenuOpen(false)}
-                  />
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                   <div className="absolute right-0 top-9 z-20 min-w-[160px] rounded-xl border border-border bg-card shadow-lg overflow-hidden">
                     <button
                       onClick={handleLeave}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-destructive hover:bg-muted transition-colors"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-destructive hover:bg-muted transition-colors cursor-pointer"
                     >
                       <LogOut size={15} />
                       Salir de la liga
@@ -359,75 +423,47 @@ export default function LigaPage() {
           </div>
         </div>
 
-        {/* Current week */}
+        {/* Current week ranking */}
         <div className="space-y-3">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Semana actual
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {weekStartDisplay} – Hoy
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Semana actual</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{formatWeekDate(weekStart)} – Hoy</p>
           </div>
-
           <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
             {rankings.map((entry, idx) => {
               const position = idx + 1;
-              const { medal, num } = getMedalOrNumber(position);
+              const medal = getMedal(position);
               const isMe = entry.userId === myUserId;
               const pct = Math.round(entry.score * 100);
-
               return (
                 <div
                   key={entry.userId}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3",
-                    isMe && "bg-primary/5 border-l-2 border-l-primary"
-                  )}
+                  className={cn("flex items-center gap-3 px-4 py-3", isMe && "bg-primary/5 border-l-2 border-l-primary")}
                 >
-                  {/* Position */}
                   <div className="w-7 text-center shrink-0">
                     {medal ? (
                       <span className="text-lg leading-none">{medal}</span>
                     ) : (
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                        {num}
+                        {position}
                       </span>
                     )}
                   </div>
-
-                  {/* Avatar */}
                   <div className="shrink-0">
                     {entry.image ? (
-                      <img
-                        src={entry.image}
-                        alt={entry.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
+                      <img src={entry.image} alt={entry.name} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
-                      <div
-                        className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold",
-                          avatarColor(entry.userId)
-                        )}
-                      >
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold", avatarColor(entry.userId))}>
                         {getInitials(entry.name)}
                       </div>
                     )}
                   </div>
-
-                  {/* Name + bar */}
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-sm truncate", isMe && "font-bold")}>{entry.name}</p>
                     <div className="mt-1 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
+                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-
-                  {/* Score */}
                   <div className="shrink-0 text-sm font-semibold tabular-nums">{pct}%</div>
                 </div>
               );
@@ -438,17 +474,13 @@ export default function LigaPage() {
         {/* History */}
         {history.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Historial
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Historial</p>
             <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
               {history.map((week) => (
                 <div key={week.id} className="flex items-center justify-between px-4 py-3 gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">
-                      Sem {formatWeekDate(week.weekStart)}
-                    </p>
-                    <p className="text-sm font-medium truncate">{week.winnerName}</p>
+                    <p className="text-xs text-muted-foreground">Sem {formatWeekDate(week.weekStart)}</p>
+                    <p className="text-sm font-medium truncate">🥇 {week.winnerName}</p>
                   </div>
                   <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">
                     {Math.round(week.winnerScore * 100)}%

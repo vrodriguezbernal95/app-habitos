@@ -10,12 +10,6 @@ export async function POST(req: Request) {
 
   const userId = (session.user as any).id;
 
-  // Enforce one league per user
-  const existing = await prisma.leagueMember.findFirst({ where: { userId } });
-  if (existing) {
-    return NextResponse.json({ error: "Ya estás en una liga" }, { status: 400 });
-  }
-
   const body = await req.json();
   const code = (body.code ?? "").toString().toUpperCase().trim();
   if (!code || code.length !== 6) {
