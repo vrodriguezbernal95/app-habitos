@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Lock, Pencil, Trash2, ToggleLeft, ToggleRight, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,8 +20,6 @@ export default function HabitosPage() {
   const router = useRouter();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
   useEffect(() => {
     fetch("/api/habits")
       .then((r) => r.json())
@@ -30,13 +28,6 @@ export default function HabitosPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
-
-  // Cerrar menu al hacer clic fuera
-  useEffect(() => {
-    const handler = () => setOpenMenuId(null);
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const activeHabits = habits.filter((h) => h.isActive);
@@ -101,11 +92,8 @@ export default function HabitosPage() {
           <HabitRow
             key={habit.id}
             habit={habit}
-            menuOpen={openMenuId === habit.id}
-            onMenuOpen={(e) => { e.stopPropagation(); setOpenMenuId(habit.id); }}
-            onMenuClose={() => setOpenMenuId(null)}
-            onEdit={() => { setOpenMenuId(null); router.push(`/editar/${habit.id}`); }}
-            onDelete={() => { setOpenMenuId(null); handleDelete(habit.id); }}
+            onEdit={() => router.push(`/editar/${habit.id}`)}
+            onDelete={() => handleDelete(habit.id)}
             onToggle={() => handleToggleActive(habit)}
           />
         ))}
@@ -155,11 +143,8 @@ export default function HabitosPage() {
             <HabitRow
               key={habit.id}
               habit={habit}
-              menuOpen={openMenuId === habit.id}
-              onMenuOpen={(e) => { e.stopPropagation(); setOpenMenuId(habit.id); }}
-              onMenuClose={() => setOpenMenuId(null)}
-              onEdit={() => { setOpenMenuId(null); router.push(`/editar/${habit.id}`); }}
-              onDelete={() => { setOpenMenuId(null); handleDelete(habit.id); }}
+              onEdit={() => router.push(`/editar/${habit.id}`)}
+              onDelete={() => handleDelete(habit.id)}
               onToggle={() => handleToggleActive(habit)}
               canActivate={activeHabits.length < maxSlots}
             />
@@ -188,16 +173,27 @@ export default function HabitosPage() {
 
 interface HabitRowProps {
   habit: Habit & { isActive?: boolean };
-  menuOpen: boolean;
-  onMenuOpen: (e: React.MouseEvent) => void;
-  onMenuClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onToggle: () => void;
   canActivate?: boolean;
 }
 
-function HabitRow({ habit, menuOpen, onMenuOpen, onMenuClose, onEdit, onDelete, onToggle, canActivate = true }: HabitRowProps) {
+function HabitRow({ habit, onEdit, onDelete, onToggle, canActivate = true }: HabitRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
   return (
     <div
       className={cn(
@@ -246,27 +242,24 @@ function HabitRow({ habit, menuOpen, onMenuOpen, onMenuClose, onEdit, onDelete, 
       </button>
 
       {/* More menu */}
-      <div className="relative">
+      <div className="relative" ref={menuRef}>
         <button
-          onClick={onMenuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
           className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground cursor-pointer tap-scale hover:bg-muted transition-all duration-150"
         >
           <MoreVertical size={16} />
         </button>
         {menuOpen && (
-          <div
-            className="absolute right-0 top-9 z-50 w-36 rounded-xl border border-border bg-card shadow-lg overflow-hidden"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
+          <div className="absolute right-0 top-9 z-50 w-36 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
             <button
-              onClick={onEdit}
+              onClick={() => { setMenuOpen(false); onEdit(); }}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors duration-150 cursor-pointer"
             >
               <Pencil size={14} className="text-muted-foreground" />
               Editar
             </button>
             <button
-              onClick={onDelete}
+              onClick={() => { setMenuOpen(false); onDelete(); }}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors duration-150 cursor-pointer"
             >
               <Trash2 size={14} />
