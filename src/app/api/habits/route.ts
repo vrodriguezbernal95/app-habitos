@@ -45,6 +45,11 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   try {
+    const MAX_ACTIVE_SLOTS = 3;
+    const activeCount = await prisma.habit.count({
+      where: { userId, isActive: true, archivedAt: null },
+    });
+
     const habit = await prisma.habit.create({
       data: {
         userId,
@@ -56,7 +61,7 @@ export async function POST(req: Request) {
         days: body.days ?? [],
         counterTarget: body.type === "counter" ? (body.counterTarget ?? 8) : null,
         reminder: body.reminder ?? null,
-        isActive: false,
+        isActive: activeCount < MAX_ACTIVE_SLOTS,
         checkpoints: body.type === "checkpoints"
           ? { create: (body.checkpoints ?? []).map((cp: any) => ({ time: cp.time, label: cp.label })) }
           : undefined,
