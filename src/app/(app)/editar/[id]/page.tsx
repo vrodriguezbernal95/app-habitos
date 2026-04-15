@@ -6,8 +6,7 @@ import { Plus, Minus, Clock, ChevronLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { HabitType, HabitFrequency } from "@/lib/types";
-
-const ICONS = ["🥗", "🧘", "💧", "📖", "🏃", "😴", "📵", "✍️", "💊", "🎯", "🌿", "💪"];
+import { HABIT_ICONS, CATEGORIES, CATEGORY_LABELS, HabitIcon } from "@/lib/habit-icons";
 const COLORS = [
   "bg-emerald-500", "bg-violet-500", "bg-blue-500", "bg-amber-500",
   "bg-rose-500", "bg-indigo-500", "bg-slate-500", "bg-orange-500",
@@ -204,8 +203,8 @@ function Step1({ habit, onChange }: { habit: EditHabit; onChange: (h: EditHabit)
       </div>
 
       <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/50 border border-border">
-        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-2xl", habit.color)}>
-          {habit.icon}
+        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-primary-foreground", habit.color)}>
+          <HabitIcon icon={habit.icon} size={26} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-base truncate">{habit.name || "Mi hábito"}</p>
@@ -225,22 +224,31 @@ function Step1({ habit, onChange }: { habit: EditHabit; onChange: (h: EditHabit)
         <p className="text-xs text-muted-foreground mt-1 text-right">{habit.name.length}/50</p>
       </div>
 
-      <div>
-        <label className="text-sm font-medium text-foreground block mb-2">Icono</label>
-        <div className="grid grid-cols-6 gap-2">
-          {ICONS.map((icon) => (
-            <button
-              key={icon}
-              onClick={() => onChange({ ...habit, icon })}
-              className={cn(
-                "w-full aspect-square rounded-xl text-xl flex items-center justify-center cursor-pointer tap-scale transition-all duration-150",
-                habit.icon === icon ? "bg-primary/15 ring-2 ring-primary" : "bg-muted hover:bg-muted/70"
-              )}
-            >
-              {icon}
-            </button>
-          ))}
-        </div>
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-foreground block">Icono</label>
+        {CATEGORIES.map((cat) => (
+          <div key={cat}>
+            <p className="text-xs text-muted-foreground font-medium mb-1.5">{CATEGORY_LABELS[cat]}</p>
+            <div className="grid grid-cols-6 gap-2">
+              {HABIT_ICONS.filter((h) => h.category === cat).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => onChange({ ...habit, icon: id })}
+                  title={label}
+                  className={cn(
+                    "w-full aspect-square rounded-xl flex items-center justify-center cursor-pointer tap-scale transition-all duration-150",
+                    habit.icon === id
+                      ? "bg-primary/15 ring-2 ring-primary text-primary"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  )}
+                  aria-label={label}
+                >
+                  <Icon size={20} />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div>
@@ -437,8 +445,8 @@ function Step4({ habit, onChange }: { habit: EditHabit; onChange: (h: EditHabit)
       <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-2">
         <p className="text-xs font-semibold text-primary uppercase tracking-wide">Resumen</p>
         <div className="flex items-center gap-3">
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-xl", habit.color)}>
-            {habit.icon}
+          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-primary-foreground", habit.color)}>
+            <HabitIcon icon={habit.icon} size={20} />
           </div>
           <div>
             <p className="font-semibold text-sm">{habit.name}</p>

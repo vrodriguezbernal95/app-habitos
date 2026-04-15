@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, ChevronUp, X, Plus, Minus, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { HabitIcon } from "@/lib/habit-icons";
 import { StreakBadge } from "./StreakBadge";
 import { ContextTagPicker } from "./ContextTagPicker";
 import type { Habit, Checkpoint, FailContext } from "@/lib/types";
@@ -88,11 +89,11 @@ export function HabitCard({ habit, onToggle, onCheckpointChange, onCounterChange
           {/* Icon */}
           <div
             className={cn(
-              "w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 transition-all duration-200",
-              habit.completedToday ? "bg-primary/10" : "bg-muted"
+              "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200",
+              habit.completedToday ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
             )}
           >
-            {habit.icon}
+            <HabitIcon icon={habit.icon} size={22} />
           </div>
 
           {/* Name + streak */}

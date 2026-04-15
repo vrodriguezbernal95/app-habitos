@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Lock, Pencil, Trash2, ToggleLeft, ToggleRight, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Habit } from "@/lib/types";
+import { HabitIcon } from "@/lib/habit-icons";
 
 // Requisitos para desbloquear más slots
 const SLOT_REQUIREMENTS = [
@@ -206,10 +207,10 @@ function HabitRow({ habit, menuOpen, onMenuOpen, onMenuClose, onEdit, onDelete, 
     >
       {/* Icon */}
       <div className={cn(
-        "w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0",
-        habit.isActive ? "bg-primary/10" : "bg-muted"
+        "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+        habit.isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
       )}>
-        {habit.icon}
+        <HabitIcon icon={habit.icon} size={22} />
       </div>
 
       {/* Info */}
